@@ -1,0 +1,18 @@
+author: mongoose-os
+type: lib
+description: A PWM lib
+version: 1.0
+
+sources:
+  - src
+  - src/${arch}
+filesystem:
+  - fs
+config_schema:
+libs:
+
+tags:
+  - c
+  - js
+
+skeleton_version: 2017-05-18
