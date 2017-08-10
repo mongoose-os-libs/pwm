@@ -3,6 +3,8 @@ type: lib
 description: PWM support
 version: 1.0
 
+platforms: [ cc3200, esp32, esp8266 ]
+
 sources:
   - src
   - src/${arch}
