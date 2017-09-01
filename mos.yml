@@ -3,18 +3,16 @@ type: lib
 description: PWM support
 version: 1.0
 
-platforms: [ cc3200, esp32, esp8266 ]
+platforms: [ esp32, esp8266 ]
 
 sources:
   - src
   - src/${arch}
-filesystem:
-  - fs
-libs:
 
 tags:
   - c
-  - js
   - hw
+  - js
+  - pwm
 
-manifest_version: 2017-05-18
+manifest_version: 2017-06-16
