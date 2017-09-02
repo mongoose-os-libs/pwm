@@ -133,7 +133,7 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
    * So we clamp duty at 500 on both sides, which is ok for 10 KHz or less, but
    * becomes noticeable for higher freqs.
    */
-  if (freq < 10 || freq > 10000) return false;
+  if (freq > 0 && (freq < 10 || freq > 10000)) return false;
 
   p = find_or_create_pwm_info(pin, (freq > 0));
   if (p == NULL) {
