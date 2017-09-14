@@ -22,9 +22,8 @@ extern "C" {
  *  Params:
  *  pin:    GPIO number.
  *  freq:   Frequency, in Hz. 0 disables PWM on the pin.
- *  duty:   Duty, in %, how long to spend in "1" state. Must be between 0 and
- *          100 (inclusive). 0 is "always off", 100 is "always on",
- *          50 is a square wave.
+ *  duty:   Specifies which fraction of the cycle is spent in "1" state:
+ *          0 is always off, 0.5 is a square wave, 1 is always on.
  *  Return:
  *  true - SUCCESS, false - FAIL.
  *

@@ -147,9 +147,16 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
     return true;
   }
 
+  if (duty > 1.0) {
+    /* Notice added on 2017/09/14. TODO(rojer): Remove after a while. */
+    LOG(LL_WARN,
+        ("=== Please use [0, 1] fraction for PWM duty cycle "
+         "mgos_pwm_set(%d, %f) should be changed to mgos_pwm_set(%d, %f) ===",
+         pin, duty, pin, duty / 100.0));
+    duty /= 100;
+  }
   int period = roundf((float) TMR_FREQ / freq);
-  int th = MIN(MAX(roundf(period * (duty / 100.0)), TMR_MIN_LOAD),
-               period - TMR_MIN_LOAD);
+  int th = MIN(MAX(roundf(period * duty), TMR_MIN_LOAD), period - TMR_MIN_LOAD);
   int tl = period - th;
   LOG(LL_DEBUG, ("%d %d %f => %d %d %d", pin, freq, duty, period, th, tl));
 

@@ -162,7 +162,15 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
   if (freq == 0) {
     ret = esp32_pwm_remove(ch);
   } else {
-    d = roundf(duty * (float) ((1 << LEDC_DEPTH) - 1) / 100.0);
+    if (duty > 1.0) {
+      /* Notice added on 2017/09/14. TODO(rojer): Remove after a while. */
+      LOG(LL_WARN,
+          ("=== Please use [0, 1] fraction for PWM duty cycle "
+           "mgos_pwm_set(%d, %f) should be changed to mgos_pwm_set(%d, %f) ===",
+           pin, duty, pin, duty / 100.0));
+      duty /= 100;
+    }
+    d = roundf(duty * (float) ((1 << LEDC_DEPTH) - 1));
 
     for (i = 0; i < LEDC_NUM_CHANS; i++) {
       if (s_ledc_ch[i].timer != -1 &&

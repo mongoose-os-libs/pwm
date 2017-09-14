@@ -1,9 +1,9 @@
 let PWM = {
   // ## **`PWM.set(pin, freq, duty)`**
   // Set and control the PWM. `pin` is a GPIO pin number, `freq` is
-  // frequency, in Hz. `freq` 0 disables PWM on the pin. `duty` is duty in %,
-  // how long to spend in "1" state. Must be between 0 and 100 inclusive.
-  // 0 is "always off", 100 is "always on", 50 is a square wave.
+  // frequency, in Hz. `freq` 0 disables PWM on the pin. `duty` specifies
+  // which fraction of the cycle is spent in "1" state: 0 is always off,
+  // 0.5 is a square wave, 1 is always on.
   // Return: true - success, false - failure.
   //
   // Example:
