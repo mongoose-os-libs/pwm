@@ -16,9 +16,11 @@
 
 #include "common/cs_dbg.h"
 #include "mgos_gpio.h"
+#include "mgos_timers.h"
 #include "mgos_utils.h"
-#include "fw/platforms/esp8266/src/esp_gpio.h"
-#include "fw/platforms/esp8266/src/esp_periph.h"
+#include "esp_gpio.h"
+#include "esp_periph.h"
+#include "esp_hw_timer.h"
 
 /*
  * Semi-hardware PWM - uses hardware timer 1 to generate base clock.
@@ -36,7 +38,6 @@
  * should be expected.
  */
 
-#define TMR_PRESCALER_1 0 /* No prescaler */
 #define TMR_FREQ 80000000
 #define TMR_MIN_LOAD 500
 #define TMR_MAX_LOAD 8000000
@@ -52,7 +53,8 @@ struct pwm_info {
 static int s_num_pwms;
 static struct pwm_info *s_pwms;
 
-static void pwm_timer_isr(void);
+static mgos_timer_id s_timer_id = MGOS_INVALID_TIMER_ID;
+static void pwm_timer_isr(void *arg);
 
 static struct pwm_info *find_or_create_pwm_info(uint8_t pin, bool create) {
   int i;
@@ -87,10 +89,8 @@ static void remove_pwm_info(struct pwm_info *p) {
 }
 
 #define TM_ENABLE BIT(7)
-#define TM_AUTO_RELOAD BIT(6)
-#define TM_INT_EDGE 0
 
-static void pwm_configure_timer(void) {
+static bool pwm_configure_timer(void) {
   bool enable = false;
   for (int i = 0; i < s_num_pwms; i++) {
     struct pwm_info *p = s_pwms + i;
@@ -100,21 +100,28 @@ static void pwm_configure_timer(void) {
     }
   }
   if (!enable) {
-    RTC_CLR_REG_MASK(FRC1_CTRL_ADDRESS, TM_ENABLE);
-    return;
+    if (s_timer_id != MGOS_INVALID_TIMER_ID) {
+      mgos_clear_timer(s_timer_id);
+      s_timer_id = MGOS_INVALID_TIMER_ID;
+    }
+    return true;
   }
 
-  if (RTC_REG_READ(FRC1_CTRL_ADDRESS) & TM_ENABLE) {
+  if (s_timer_id != MGOS_INVALID_TIMER_ID) {
     /* Already running, don't disrupt */
-    return;
+    return true;
   }
-  RTC_CLR_REG_MASK(FRC1_INT_ADDRESS, FRC1_INT_CLR_MASK);
-  ETS_FRC_TIMER1_NMI_INTR_ATTACH(pwm_timer_isr);
-  RTC_REG_WRITE(FRC1_LOAD_ADDRESS, TMR_MIN_LOAD); /* Run soon */
-  RTC_REG_WRITE(FRC1_CTRL_ADDRESS,
-                TMR_PRESCALER_1 | TM_ENABLE | TM_INT_EDGE | TM_AUTO_RELOAD);
-  TM1_EDGE_INT_ENABLE();
-  ETS_FRC1_INTR_ENABLE();
+
+  s_timer_id = mgos_set_hw_timer(10 /* run soon */,
+                                 MGOS_TIMER_REPEAT | MGOS_ESP8266_HW_TIMER_NMI,
+                                 pwm_timer_isr, NULL);
+
+  if (s_timer_id == MGOS_INVALID_TIMER_ID) {
+    LOG(LL_ERROR, ("Unable to set HW timer. Already used?"));
+    return false;
+  }
+
+  return true;
 }
 
 bool mgos_pwm_set(int pin, int freq, float duty) {
@@ -176,16 +183,16 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
     p->val = 0;
     p->cnt = tl;
   }
+  ETS_FRC1_INTR_ENABLE();
 
-  pwm_configure_timer();
-  return true;
+  return pwm_configure_timer();
 }
 
 #define RTC_SET_REG_MASK(reg, mask) \
   SET_PERI_REG_MASK(PERIPHS_TIMER_BASEDDR + reg, mask)
 
 /* This is NMI ISR, extreme care must be taken with things done here. */
-IRAM NOINSTR void pwm_timer_isr(void) {
+IRAM NOINSTR void pwm_timer_isr(void *arg) {
   uint32_t set = 0, clear = 0;
   int prev_load = (int) RTC_REG_READ(FRC1_LOAD_ADDRESS);
   int next_load = TMR_MAX_LOAD;
@@ -223,7 +230,7 @@ IRAM NOINSTR void pwm_timer_isr(void) {
     /* RTC_GPIO_OUT has only one functional bit - bit 0 */
     WRITE_PERI_REG(RTC_GPIO_OUT, ((set & BIT(16)) != 0));
   }
-  RTC_REG_WRITE(FRC1_INT_ADDRESS, FRC1_INT_CLR_MASK);
+  (void) arg;
 }
 
 #endif

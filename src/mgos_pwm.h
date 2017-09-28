@@ -11,6 +11,8 @@
 #ifndef CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
 #define CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
