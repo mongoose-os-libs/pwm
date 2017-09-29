@@ -20,7 +20,7 @@
 #include "mgos_utils.h"
 #include "esp_gpio.h"
 #include "esp_periph.h"
-#include "esp_hw_timer.h"
+#include "esp_hw_timers.h"
 
 /*
  * Semi-hardware PWM - uses hardware timer 1 to generate base clock.
