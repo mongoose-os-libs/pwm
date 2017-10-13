@@ -4,8 +4,9 @@
  */
 
 /*
- * View this file on GitHub:
- * [mgos_pwm.h](https://github.com/mongoose-os-libs/pwm/blob/master/src/mgos_pwm.h)
+ * PWM API.
+ * See https://en.wikipedia.org/wiki/Pulse-width_modulation for the
+ * background information.
  */
 
 #ifndef CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
