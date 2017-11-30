@@ -179,9 +179,8 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
   if (th == 0 || tl == 0) {
     mgos_gpio_write(pin, (tl == 0));
   } else {
-    mgos_gpio_write(pin, 0);
-    p->val = 0;
-    p->cnt = tl;
+    p->val = mgos_gpio_read_out(pin);
+    p->cnt = p->val ? th : tl;
   }
   ETS_FRC1_INTR_ENABLE();
 
