@@ -62,7 +62,7 @@ static bool esp32_pwm_config_timer(int timer, int freq) {
   ledc_timer_config_t ledc_timer;
 
   ledc_timer.speed_mode = LEDC_MODE;
-  ledc_timer.bit_num = LEDC_DEPTH;
+  ledc_timer.duty_resolution = LEDC_DEPTH;
   ledc_timer.timer_num = timer;
   ledc_timer.freq_hz = freq;
 
