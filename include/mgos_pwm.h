@@ -38,8 +38,6 @@ extern "C" {
  */
 bool mgos_pwm_set(int pin, int freq, float duty);
 
-bool mgos_pwm_init(void);
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
