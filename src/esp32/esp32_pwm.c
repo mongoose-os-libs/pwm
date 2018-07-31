@@ -71,12 +71,12 @@ static void esp32_pwm_free_timer(int ch) {
 
 static bool esp32_pwm_config_timer(int timer, int freq) {
   esp_err_t rc;
-  ledc_timer_config_t ledc_timer;
-
-  ledc_timer.speed_mode = LEDC_MODE;
-  ledc_timer.duty_resolution = LEDC_DEPTH;
-  ledc_timer.timer_num = timer;
-  ledc_timer.freq_hz = freq;
+  ledc_timer_config_t ledc_timer = {
+      .speed_mode = LEDC_MODE,
+      .duty_resolution = LEDC_DEPTH,
+      .timer_num = timer,
+      .freq_hz = freq,
+  };
 
   if ((rc = ledc_timer_config(&ledc_timer)) != ESP_OK) {
     LOG(LL_ERROR, ("LEDC timer config failed: %d", rc));
@@ -89,9 +89,16 @@ static bool esp32_pwm_config_timer(int timer, int freq) {
 static bool esp32_pwm_add(int pin, int timer, int freq, int duty) {
   int ch;
   esp_err_t rc;
-  ledc_channel_config_t ledc_channel;
+  ledc_channel_config_t ledc_channel = {
+      .gpio_num = pin,
+      .speed_mode = LEDC_MODE,
+      .intr_type = LEDC_INTR_DISABLE,
+      .duty = duty,
+  };
 
   if ((ch = esp32_pwm_find_ch(-1)) == -1) return false;
+
+  ledc_channel.channel = ch;
 
   if (timer == -1) {
     if ((timer = esp32_pwm_get_free_timer()) == -1 ||
@@ -100,12 +107,7 @@ static bool esp32_pwm_add(int pin, int timer, int freq, int duty) {
     }
   }
 
-  ledc_channel.gpio_num = pin;
-  ledc_channel.speed_mode = LEDC_MODE;
-  ledc_channel.channel = ch;
-  ledc_channel.intr_type = LEDC_INTR_DISABLE;
   ledc_channel.timer_sel = timer;
-  ledc_channel.duty = duty;
 
   if ((rc = ledc_channel_config(&ledc_channel)) != ESP_OK) {
     LOG(LL_ERROR, ("LEDC channel config failed: %d", rc));
