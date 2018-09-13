@@ -16,6 +16,7 @@ tags:
   - js
   - pwm
   - core
+  - docs:core:PWM
 
 manifest_version: 2017-09-29
 
