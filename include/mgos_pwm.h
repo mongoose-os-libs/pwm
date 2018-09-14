@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-/*
- * PWM API.
- * See https://en.wikipedia.org/wiki/Pulse-width_modulation for the
- * background information.
- */
-
 #ifndef CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
 #define CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
 
