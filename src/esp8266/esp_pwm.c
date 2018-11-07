@@ -147,12 +147,9 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
    * Load value is a 23-bit field, with no prescaler maximum divider is 8388608.
    * Getting lower frequencies would require prescaler, which seems like
    * unnecessary complexity.
-   * 10K upper limit is due to TMR_MIN_LOAD: setting timer load value to less
-   * than ~500 (@ 80 MHz CPU clk) results in lockup (continuous NMI state).
-   * So we clamp duty at 500 on both sides, which is ok for 10 KHz or less, but
-   * becomes noticeable for higher freqs.
+   * Practical upper limit for freq seems to be about 40 KHz @ 160 MHz CPU clk.
    */
-  if (freq > 0 && (freq < 10 || freq > 10000)) return false;
+  if (freq > 0 && freq < 10) return false;
 
   p = find_or_create_pwm_info(pin, (freq > 0));
   if (p == NULL) {
@@ -166,14 +163,6 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
     return true;
   }
 
-  if (duty > 1.0) {
-    /* Notice added on 2017/09/14. TODO(rojer): Remove after a while. */
-    LOG(LL_WARN,
-        ("=== Please use [0, 1] fraction for PWM duty cycle "
-         "mgos_pwm_set(%d, %f) should be changed to mgos_pwm_set(%d, %f) ===",
-         pin, duty, pin, duty / 100.0));
-    duty /= 100;
-  }
   int period = roundf((float) TMR_FREQ / freq);
   int th = MIN(MAX(roundf(period * duty), TMR_MIN_LOAD), period - TMR_MIN_LOAD);
   int tl = period - th;
