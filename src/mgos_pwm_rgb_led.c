@@ -82,18 +82,10 @@ static void vLEDPWMTask(void* pvParameters) {
         mgos_gpio_write(pParams->led3_gpio, offDuty ? 1 : 0);
     }
     // Initialise the xLastWakeTime variable with the current time.
-
     LOG(LL_DEBUG, ("LEDPWMTASK int r %g, g %g, b %g freq %d", pParams->led1_pct, pParams->led2_pct, pParams->led3_pct, pParams->freq));
 
     for (;;) {
         on = !on;
-        /*
-        if (on){
-            printf("vLEDPWMTask ON\n");
-        } else {
-            printf("vLEDPWMTask OFF\n");
-        }
-        */
 
         if (pParams->led1_gpio)
             mgos_pwm_set(pParams->led1_gpio, pParams->freq, on ? pParams->led1_pct : offDuty);
@@ -104,42 +96,9 @@ static void vLEDPWMTask(void* pvParameters) {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
-/*
-static void vLEDTask(void* pvParameters) {
-    p_params_t pParams = (p_params_t)pvParameters;
 
-    bool on = true;
-    TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pParams->ticks / portTICK_PERIOD_MS;
 
-    // turn them all off to avoid weird colors
-    if (pParams->led1)
-        mgos_gpio_write(pParams->led1, false);
-    if (pParams->led2)
-        mgos_gpio_write(pParams->led2, false);
-    if (pParams->led3)
-        mgos_gpio_write(pParams->led3, false);
-    // Initialise the xLastWakeTime variable with the current time.
-    xLastWakeTime = xTaskGetTickCount();
-
-    for (;;) {
-        on = !on;
-        if (pParams->led1)
-            mgos_gpio_write(pParams->led1, on);
-        if (pParams->led2)
-            mgos_gpio_write(pParams->led2, on);
-        if (pParams->led3)
-            mgos_gpio_write(pParams->led3, on);
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-    }
-}
-*/
-
-static void mgos_pwm_rgb_fade_set(int chan, float pct, int ms, bool common_cathode) {
-
-    //float duty = brightness_target / 255.0f;
-
-    //if (!common_cathode) duty = 1 - duty; // common anode fix
+static void mgos_pwm_rgb_fade_set(int chan, float pct, int ms, bool common_cathode) {   
 
     LOG(LL_DEBUG, ("mgos_pwm_rgb_fade_set chan %d br %g  ms %d", chan, pct, ms));
 
@@ -164,8 +123,6 @@ static bool mgos_pwm_rgb_led_apply(struct mgos_pwm_rgb_led *led) {
 
     LOG(LL_DEBUG, ("Input LEDR %d G %d B %d BR %d", led->r, led->g, led->b, led->br));
 
-    //LOG(LL_DEBUG, ("Current chans: R %d, G %d, B %d ", led->gpio_r_chan, led->gpio_g_chan, led->gpio_b_chan));
-
     // Apply brightness, if its zero/off it won't change
     rv *= brv;
     gv *= brv;
@@ -173,20 +130,10 @@ static bool mgos_pwm_rgb_led_apply(struct mgos_pwm_rgb_led *led) {
 
     if (led->common_cathode){
         // COMMON CATHODE (ie they have a common ground )
-
         LOG(LL_DEBUG, ("CATHODE apply r %g, g %g, b %g | brightness %g", rv, gv, bv, brv));
     } else {
         // COMMON ANODE means the LEDs share a common voltage source / VIN
         // User supplies (0 = off, 1 = fully on)
-        /*
-        if (rv > 0)
-            rv *= brv;
-        if (gv > 0)
-            gv *= brv;
-        if (bv > 0)
-            bv *= brv;
-            */
-
         // If common anode, we need to flip the values as a 0 output = fully on / 1 = off
         rv = 1.0f - rv;
         gv = 1.0f - gv;
@@ -204,10 +151,8 @@ static bool mgos_pwm_rgb_led_apply(struct mgos_pwm_rgb_led *led) {
 
     if (led->fade_direction > FADE_OFF){
         LOG(LL_DEBUG, ("Calling fade set"));
-      if (led->r && led->gpio_r_chan > -1){
+      if (led->r && led->gpio_r_chan > -1)
           mgos_pwm_rgb_fade_set(led->gpio_r_chan, rv, led->fade_time, led->common_cathode);
-          //LOG(LL_DEBUG, ("Calling fade set"));
-      }
       if (led->g && led->gpio_g_chan > -1)
           mgos_pwm_rgb_fade_set(led->gpio_g_chan, gv, led->fade_time, led->common_cathode);
       if (led->b && led->gpio_b_chan > -1)
@@ -229,7 +174,6 @@ void mgos_pwm_rgb_channel_update_cb(int ev, void* ev_data, void* userdata) {
     if ((int)data->channel >= 0) {
 
         LOG(LL_DEBUG, ("pwm_channel_update_cb: pin %d is on chan %d", data->pin, data->channel));
-        //LOG(LL_DEBUG, ("pwm_channel_update_cb: Looking for pins r %d g %d b %d", ledLocal->gpio_r, ledLocal->gpio_g, ledLocal->gpio_b));
 
         if (data->pin == ledLocal->gpio_r) {
             ledLocal->gpio_r_chan = data->channel;
@@ -238,63 +182,32 @@ void mgos_pwm_rgb_channel_update_cb(int ev, void* ev_data, void* userdata) {
         } else if (data->pin == ledLocal->gpio_b) {
             ledLocal->gpio_b_chan = data->channel;
         }
-
-        //LOG(LL_DEBUG, ("pwm_channel_update_cb: Current chans: R %d, G %d, B %d ", ledLocal->gpio_r_chan, ledLocal->gpio_g_chan, ledLocal->gpio_b_chan));
     }
 
     (void)ev;
 }
-
-
-
-/*
-static int pwmEventCount;
-// ISR routine for changing fade direction of LEDC demo
-static void IRAM_ATTR ledc_isr_routine(void* dummy) {
-    //pwmEventCount++;
-    //LOG(LL_ERROR, ("LEDC ISR: %d", pwmEventCount));
-
-    printf("*** ledc_isr ***\n");
-}
-*/
-
 
 static void ledc_fade_cb(void* ledArg) {
     static bool fade_inverted = true; // direction of last fade
 
     struct mgos_pwm_rgb_led* led = (struct mgos_pwm_rgb_led*)ledArg;
 
-    //int brightness;
-    //for (;;) {
-        fade_inverted = !fade_inverted;
+    fade_inverted = !fade_inverted;
 
-        led->br = fade_inverted ? led->fade_max : led->fade_min;
+    led->br = fade_inverted ? led->fade_max : led->fade_min;
 
-        if (fade_inverted) {
-            LOG(LL_DEBUG, ("LEDC fade timer inverted  target %d", led->br));
-        } else {
-            LOG(LL_DEBUG, ("LEDC fade timer normal way target %d", led->br));
-        }
-        mgos_pwm_rgb_led_apply(led);
+    if (fade_inverted) {
+        LOG(LL_DEBUG, ("LEDC fade timer inverted  target %d", led->br));
+    } else {
+        LOG(LL_DEBUG, ("LEDC fade timer normal way target %d", led->br));
+    }
+    mgos_pwm_rgb_led_apply(led);
 
-        //int duty = fade_inverted ?
-
-        //ledc_set_fade_with_time(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)led->gpio_g_chan, (int)duty, ms);
-        //show_timing(fade_inverted);
-        //ESP_ERROR_CHECK(ledc_set_fade_with_time(MODE, CHANNEL, fade_inverted ? 0 : MAX_DUTY, FADE_MS));
-        //ESP_ERROR_CHECK(ledc_fade_start(MODE, CHANNEL, LEDC_FADE_WAIT_DONE));
-    //}
 }
 
 void mgos_pwm_rgb_blink_task(void* ledArg) {
-
     // Dereference it otherwise the memory footprint grows with events etc etc
-    //struct mgos_pwm_rgb_led led = * (struct mgos_pwm_rgb_led*)ledArg;
-    //struct mgos_pwm_rgb_led led = ledArg;
-
     struct mgos_pwm_rgb_led* led = (struct mgos_pwm_rgb_led*)ledArg;
-
-    //struct mgos_pwm_rgb_led* ledLocal = (struct mgos_pwm_rgb_led*)userdata;
 
     LOG(LL_DEBUG, ("LEDC Blinking LED via pwm rgb blink task, time %d ", led->fade_time));
 
@@ -328,12 +241,10 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
         ms = 100000;
     }
     led->fade_time = ms;
-
     LOG(LL_INFO, ("LEDC blink_start time: %d", led->fade_time));
 
     // Stop it as it may have different parameters
     mgos_pwm_rgb_blink_stop(led);
-
 
     p_params_t pParams1 = (p_params_t)malloc(sizeof(params_t));
     pParams1->led1_gpio = led->gpio_r;
@@ -345,7 +256,6 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     pParams1->ticks = led->fade_time;
     pParams1->freq = led->freq;
     pParams1->common_cathode = led->common_cathode;
-
     LOG(LL_DEBUG, ("LEDPWMTASK params r %g, g %g, b %g ", pParams1->led1_pct, pParams1->led2_pct, pParams1->led3_pct));
 
     BaseType_t xReturned;
@@ -356,7 +266,6 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
         pParams1, /* Parameter passed into the task. */
         tskIDLE_PRIORITY + 1, /* Priority at which the task is created. */
         &led->xHandle); /* Used to pass out the created task's handle. */
-    //xTaskCreate(vLEDPWMTask, "LEDPWMTASK", 4000, pParams1, tskIDLE_PRIORITY + 1, NULL);
 }
 
 
@@ -379,8 +288,6 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
         led->fade_installed = true;
     }
 
-    //xTaskCreate(ledc_fade, "ledc_fade", 2 * configMINIMAL_STACK_SIZE, led, 4, NULL);
-
     LOG(LL_DEBUG, ("LEDC fade installed. time %d, direction %d", led->fade_time, led->fade_direction));
 
     if (direction == FADE_UP) {
@@ -388,8 +295,7 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
             LOG(LL_DEBUG, ("LEDC UP trying to set brightness with led & min %u ", min));
             mgos_pwm_rgb_led_set_brightness(led, min);
         }
-        //LOG(LL_DEBUG, ("after fade installed. "));
-
+        
         led->br = led->fade_max;
         mgos_pwm_rgb_led_apply(led);
 
@@ -399,7 +305,7 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
             LOG(LL_DEBUG, ("LEDC DOWN trying to set brightness with led & max %u ", max));
             mgos_pwm_rgb_led_set_brightness(led, max);
         }
-        //LOG(LL_DEBUG, ("after fade DOWN installed. "));
+        
         led->br = led->fade_min;
         mgos_pwm_rgb_led_apply(led);
     }
@@ -409,8 +315,6 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
         led->led_timer_id = mgos_set_timer(led->fade_time + 1 /* so we know it finished */, MGOS_TIMER_REPEAT, ledc_fade_cb, led);
     }
 }
-
-
 
 void mgos_pwm_rgb_fade_stop(struct mgos_pwm_rgb_led* led) {
     if (led->fade_installed){
