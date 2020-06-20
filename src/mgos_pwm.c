@@ -24,5 +24,8 @@
 #include "mgos_pwm.h"
 
 bool mgos_pwm_init(void) {
+
+  mgos_event_register_base(MGOS_PWM_BASE, "mgos_PWM");
+
   return true;
 }

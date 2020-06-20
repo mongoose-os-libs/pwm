@@ -20,6 +20,7 @@
 #include "common/cs_dbg.h"
 #include "driver/ledc.h"
 #include "mgos_pwm.h"
+#include "mgos_event.h"
 
 #define LEDC_MODE LEDC_HIGH_SPEED_MODE
 #define LEDC_DEPTH LEDC_TIMER_10_BIT
@@ -30,6 +31,8 @@ struct ledc_info {
   int pin;
   int timer;
 };
+
+
 
 static struct ledc_info s_ledc_ch[LEDC_NUM_CHANS] = {{.pin = -1, .timer = -1},
                                                      {.pin = -1, .timer = -1},
@@ -86,13 +89,17 @@ static bool esp32_pwm_config_timer(int timer, int freq) {
   return true;
 }
 
+
+
+
+
 static bool esp32_pwm_add(int pin, int timer, int freq, int duty) {
   int ch;
   esp_err_t rc;
   ledc_channel_config_t ledc_channel = {
       .gpio_num = pin,
       .speed_mode = LEDC_MODE,
-      .intr_type = LEDC_INTR_DISABLE,
+      .intr_type = LEDC_INTR_FADE_END,
       .duty = duty,
   };
 
@@ -121,6 +128,8 @@ static bool esp32_pwm_add(int pin, int timer, int freq, int duty) {
 
   LOG(LL_DEBUG, ("LEDC channel %d added: pin=%d, timer=%d, freq=%d, duty=%d",
                  (ch), (pin), (timer), (freq), (duty)));
+
+  
 
   return true;
 }
@@ -192,6 +201,11 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
       ret = esp32_pwm_add(pin, timer, freq, d);
     }
   }
+
+  // Announce it so on ESP32 systems we can track pin to LEDC Channel mappings for fade effects etc
+  struct mgos_pwm_channel_data data = { .channel = ch,
+      .pin = pin };
+  mgos_event_trigger(MGOS_PWM_CHANNEL, &data);
 
   return ret;
 }
