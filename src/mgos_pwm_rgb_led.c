@@ -50,6 +50,11 @@ static void vLEDPWMTask(void* pvParameters) {
     TIMERG0.wdt_feed = 1;
     TIMERG0.wdt_wprotect = 0;
 
+    // feed dog 1
+    TIMERG1.wdt_wprotect = TIMG_WDT_WKEY_VALUE;  // write enable
+    TIMERG1.wdt_feed = 1;                        // feed dog
+    TIMERG1.wdt_wprotect = 0;                    // write protect
+
     bool on = true;
     float offDuty = 0;
     if (!pParams->common_cathode) {
@@ -101,8 +106,12 @@ static void vLEDPWMTask(void* pvParameters) {
         if (pParams->led3_gpio)
             mgos_pwm_set(pParams->led3_gpio, pParams->freq, on ? pParams->led3_pct : offDuty);
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        //vTaskDelay(pdMS_TO_TICKS(10));
         //vTaskDelay(100 / portTICK_PERIOD_MS);
     }
+
+    vTaskDelete(NULL);
 }
 
 
@@ -264,7 +273,9 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     pParams1->time = led->fade_time;
     pParams1->freq = led->freq;
     pParams1->common_cathode = led->common_cathode;
-    LOG(LL_DEBUG, ("LEDPWMTASK params r %g, g %g, b %g ", pParams1->led1_pct, pParams1->led2_pct, pParams1->led3_pct));
+    LOG(LL_DEBUG,
+        ("LEDPWMTASK params r %g, g %g, b %g time %d ", pParams1->led1_pct,
+         pParams1->led2_pct, pParams1->led3_pct, led->fade_time));
 
     BaseType_t xReturned;
     xReturned = xTaskCreate(
