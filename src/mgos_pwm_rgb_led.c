@@ -256,14 +256,20 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms_on, int ms_of
     led->fade_min = 0;
     led->fade_direction = FADE_BLINK;
     // Some sensible limits
-    if (ms < 50){
-        ms = 50;
-    } else if (ms > 100000){
-        ms = 100000;
+    if (ms_on < 50){
+        ms_on = 50;
+    } else if (ms_on > 100000) {
+        ms_on = 100000;
+    }
+    if (ms_off < 50) {
+        ms_off = 50;
+    } else if (ms_off > 100000) {
+        ms_off = 100000;
     }
     led->time_on = ms_on;
     led->time_off = ms_off;
-    LOG(LL_INFO, ("LEDC blink_start time: %d", led->fade_time));
+
+    LOG(LL_INFO, ("LEDC blink_start time on: %d off: %d", led->time_on, led->time_off));
 
     // Stop it as it may have different parameters
     mgos_pwm_rgb_blink_stop(led);
