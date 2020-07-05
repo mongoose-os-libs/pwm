@@ -98,8 +98,8 @@ static void vLEDPWMTask(void* pvParameters) {
             mgos_pwm_set(pParams->led2_gpio, pParams->freq, on ? pParams->led2_pct : offDuty);
         if (pParams->led3_gpio)
             mgos_pwm_set(pParams->led3_gpio, pParams->freq, on ? pParams->led3_pct : offDuty);
-        //vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        //vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
