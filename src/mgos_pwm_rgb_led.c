@@ -75,7 +75,9 @@ static void vLEDPWMTask(void* pvParameters) {
     // Initialise the xLastWakeTime variable with the current time.
     TickType_t xLastWakeTime;
     // Note xFrequency is in ticks, not ms. So we convert from ms by dividing by portTICK_PERIOD_MS
-    const TickType_t xFrequency = pParams->time / portTICK_PERIOD_MS;
+    //const TickType_t xFrequency = pParams->time / portTICK_PERIOD_MS;
+
+    const TickType_t xFrequency = 1000 / portTICK_PERIOD_MS;
     xLastWakeTime = xTaskGetTickCount();
 
     // turn them all off to avoid weird colors
@@ -105,10 +107,10 @@ static void vLEDPWMTask(void* pvParameters) {
             mgos_pwm_set(pParams->led2_gpio, pParams->freq, on ? pParams->led2_pct : offDuty);
         if (pParams->led3_gpio)
             mgos_pwm_set(pParams->led3_gpio, pParams->freq, on ? pParams->led3_pct : offDuty);
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        //vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
         //vTaskDelay(pdMS_TO_TICKS(10));
-        //vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
     }
 
     vTaskDelete(NULL);
