@@ -110,7 +110,7 @@ static void vLEDPWMTask(void* pvParameters) {
         //vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
         //vTaskDelay(pdMS_TO_TICKS(10));
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+        vTaskDelay(pParams->time / portTICK_PERIOD_MS);
     }
 
     vTaskDelete(NULL);
