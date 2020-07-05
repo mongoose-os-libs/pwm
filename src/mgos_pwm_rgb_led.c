@@ -268,7 +268,7 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     xReturned = xTaskCreate(
         vLEDPWMTask, /* Function that implements the task. */
         "LEDPWMTASK", /* Text name for the task. */
-        4000, /* Stack size in words, not bytes. */
+        4096, /* Stack size in words, not bytes. */
         pParams1, /* Parameter passed into the task. */
         tskIDLE_PRIORITY + 1, /* Priority at which the task is created. */
         &led->xHandle); /* Used to pass out the created task's handle. */
