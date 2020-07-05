@@ -19,7 +19,7 @@
  * PWM-controlled RGB LED.
  * Example:
  *   struct mgos_pwm_rgb_led led;
- *   mgos_pwm_rgb_led_init(&led, 16, 17, 18);
+ *   mgos_pwm_rgb_led_init(&led, 16, 17, 18, LED_FREQ, COMMON_CATHODE);
  *   mgos_pwm_rgb_led_set(&led, 255, 255, 255, 255);  // White, max brightness
  *   mgos_pwm_rgb_led_set(&led, 255,   0,   0, 127);  // Red, half brightness
  */

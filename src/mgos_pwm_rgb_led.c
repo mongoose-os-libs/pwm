@@ -26,7 +26,8 @@
 
 #include "mgos.h"
 #include "mgos_pwm.h"
-
+#include "soc/timer_group_reg.h"
+#include "soc/timer_group_struct.h"
 
 TaskHandle_t mgos_pwm_rgb_led_xHandle;
 
@@ -44,6 +45,10 @@ typedef struct params_s
 
 static void vLEDPWMTask(void* pvParameters) {
     p_params_t pParams = (p_params_t)pvParameters;
+
+    TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
+    TIMERG0.wdt_feed = 1;
+    TIMERG0.wdt_wprotect = 0;
 
     bool on = true;
     float offDuty = 0;
@@ -93,7 +98,8 @@ static void vLEDPWMTask(void* pvParameters) {
             mgos_pwm_set(pParams->led2_gpio, pParams->freq, on ? pParams->led2_pct : offDuty);
         if (pParams->led3_gpio)
             mgos_pwm_set(pParams->led3_gpio, pParams->freq, on ? pParams->led3_pct : offDuty);
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        //vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
