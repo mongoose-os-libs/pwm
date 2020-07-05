@@ -34,7 +34,7 @@ TaskHandle_t mgos_pwm_rgb_led_xHandle;
 
 typedef struct params_s
 {
-    uint16_t time; // ms
+    uint16_t time_on, time_off; // ms
     uint16_t freq;
     uint8_t led1_gpio; // 0 if unused
     uint8_t led2_gpio; // 0 if unused
@@ -46,6 +46,7 @@ typedef struct params_s
 static void vLEDPWMTask(void* pvParameters) {
     p_params_t pParams = (p_params_t)pvParameters;
 
+    /*
     TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;
     TIMERG0.wdt_feed = 1;
     TIMERG0.wdt_wprotect = 0;
@@ -54,6 +55,7 @@ static void vLEDPWMTask(void* pvParameters) {
     TIMERG1.wdt_wprotect = TIMG_WDT_WKEY_VALUE;  // write enable
     TIMERG1.wdt_feed = 1;                        // feed dog
     TIMERG1.wdt_wprotect = 0;                    // write protect
+    */
 
     bool on = true;
     float offDuty = 0;
@@ -171,11 +173,11 @@ static bool mgos_pwm_rgb_led_apply(struct mgos_pwm_rgb_led *led) {
     if (led->fade_direction > FADE_OFF){
         LOG(LL_DEBUG, ("Calling fade set"));
       if (led->r && led->gpio_r_chan > -1)
-          mgos_pwm_rgb_fade_set(led->gpio_r_chan, rv, led->fade_time, led->common_cathode);
+          mgos_pwm_rgb_fade_set(led->gpio_r_chan, rv, led->time_on, led->common_cathode);
       if (led->g && led->gpio_g_chan > -1)
-          mgos_pwm_rgb_fade_set(led->gpio_g_chan, gv, led->fade_time, led->common_cathode);
+          mgos_pwm_rgb_fade_set(led->gpio_g_chan, gv, led->time_on, led->common_cathode);
       if (led->b && led->gpio_b_chan > -1)
-          mgos_pwm_rgb_fade_set(led->gpio_b_chan, bv, led->fade_time, led->common_cathode);
+          mgos_pwm_rgb_fade_set(led->gpio_b_chan, bv, led->time_on, led->common_cathode);
 
       return true;
     } else {
@@ -228,13 +230,13 @@ void mgos_pwm_rgb_blink_task(void* ledArg) {
     // Dereference it otherwise the memory footprint grows with events etc etc
     struct mgos_pwm_rgb_led* led = (struct mgos_pwm_rgb_led*)ledArg;
 
-    LOG(LL_DEBUG, ("LEDC Blinking LED via pwm rgb blink task, time %d ", led->fade_time));
+    LOG(LL_DEBUG, ("LEDC Blinking LED via pwm rgb blink task, time %d ", led->time_on));
 
     // Very simple, we just need to call our function then delay however long we require
     // If you just use the 'best effort' timers the blinking is interrupted by other timers running in a single thread
     while (1) {
         ledc_fade_cb(&led);
-        vTaskDelay(led->fade_time / portTICK_PERIOD_MS);
+        vTaskDelay(led->time_on / portTICK_PERIOD_MS);
     }
 }
 
@@ -246,7 +248,7 @@ void mgos_pwm_rgb_blink_stop(struct mgos_pwm_rgb_led* led){
     }
 }
 
-void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
+void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms_on, int ms_off){
     LOG(LL_INFO, ("LEDC blink_start ms: %d", ms));
     mgos_pwm_rgb_fade_stop(led); // stop any fading
 
@@ -259,7 +261,8 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     } else if (ms > 100000){
         ms = 100000;
     }
-    led->fade_time = ms;
+    led->time_on = ms_on;
+    led->time_off = ms_off;
     LOG(LL_INFO, ("LEDC blink_start time: %d", led->fade_time));
 
     // Stop it as it may have different parameters
@@ -272,12 +275,13 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     pParams1->led1_pct = led->gpio_r_pct;
     pParams1->led2_pct = led->gpio_g_pct;
     pParams1->led3_pct = led->gpio_b_pct;
-    pParams1->time = led->fade_time;
+    pParams1->time_on = led->time_on;
+    pParams1->time_off = led->time_off;
     pParams1->freq = led->freq;
     pParams1->common_cathode = led->common_cathode;
     LOG(LL_DEBUG,
-        ("LEDPWMTASK params r %g, g %g, b %g time %d ", pParams1->led1_pct,
-         pParams1->led2_pct, pParams1->led3_pct, led->fade_time));
+        ("LEDPWMTASK params r %g, g %g, b %g time %d / %d", pParams1->led1_pct,
+         pParams1->led2_pct, pParams1->led3_pct, led->time_on, led->time_off));
 
     BaseType_t xReturned;
     xReturned = xTaskCreate(

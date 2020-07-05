@@ -67,7 +67,8 @@ struct mgos_pwm_rgb_led {
   bool common_cathode;
   bool fade_installed;
   enum mgos_pwm_fade_direction fade_direction;
-  int fade_time, fade_max, fade_min; /* time in ms, fade max/min in 0-255 */
+  int time_on, time_off; // off is only for blink
+  int fade_max, fade_min; /* time in ms, fade max/min in 0-255 */
   TaskHandle_t xHandle;
   mgos_timer_id led_timer_id;
 }; //  mgos_pwm_rgb_led_t, *p_mgos_pwm_rgb_led_t;
@@ -122,7 +123,7 @@ void mgos_pwm_rgb_fade_stop(struct mgos_pwm_rgb_led* led);
 void mgos_pwm_rgb_blink_task(void* ledArg);
 
 /* client callable function to start blink */
-void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms);
+void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms_on, int ms_off);
 
 void mgos_pwm_rgb_blink_stop(struct mgos_pwm_rgb_led* led);
 
