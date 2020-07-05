@@ -34,7 +34,7 @@ TaskHandle_t mgos_pwm_rgb_led_xHandle;
 
 typedef struct params_s
 {
-    uint16_t ticks;
+    uint16_t time; // ms
     uint16_t freq;
     uint8_t led1_gpio; // 0 if unused
     uint8_t led2_gpio; // 0 if unused
@@ -67,8 +67,10 @@ static void vLEDPWMTask(void* pvParameters) {
         pParams->freq = 25000;
     }
 
+    // Initialise the xLastWakeTime variable with the current time.
     TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pParams->fade_time / portTICK_PERIOD_MS;
+    // Note xFrequency is in ticks, not ms. So we convert from ms by dividing by portTICK_PERIOD_MS
+    const TickType_t xFrequency = pParams->time / portTICK_PERIOD_MS;
     xLastWakeTime = xTaskGetTickCount();
 
     // turn them all off to avoid weird colors
@@ -86,7 +88,7 @@ static void vLEDPWMTask(void* pvParameters) {
         mgos_pwm_set(pParams->led3_gpio, 0, offDuty);
         mgos_gpio_write(pParams->led3_gpio, offDuty ? 1 : 0);
     }
-    // Initialise the xLastWakeTime variable with the current time.
+    
     LOG(LL_DEBUG, ("LEDPWMTASK int r %g, g %g, b %g freq %d", pParams->led1_pct, pParams->led2_pct, pParams->led3_pct, pParams->freq));
 
     for (;;) {
@@ -259,7 +261,7 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     pParams1->led1_pct = led->gpio_r_pct;
     pParams1->led2_pct = led->gpio_g_pct;
     pParams1->led3_pct = led->gpio_b_pct;
-    pParams1->fade_time = led->fade_time;
+    pParams1->time = led->fade_time;
     pParams1->freq = led->freq;
     pParams1->common_cathode = led->common_cathode;
     LOG(LL_DEBUG, ("LEDPWMTASK params r %g, g %g, b %g ", pParams1->led1_pct, pParams1->led2_pct, pParams1->led3_pct));
