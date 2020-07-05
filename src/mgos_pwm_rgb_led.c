@@ -305,7 +305,7 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
 
     mgos_pwm_rgb_blink_stop(led); // stop any blinking task
 
-    led->fade_time = ms;
+    led->time_on = ms;
     led->fade_direction = direction;
     led->fade_max = max;
     led->fade_min = min;
@@ -319,7 +319,7 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
         led->fade_installed = true;
     }
 
-    LOG(LL_DEBUG, ("LEDC fade installed. time %d, direction %d", led->fade_time, led->fade_direction));
+    LOG(LL_DEBUG, ("LEDC fade installed. time %d, direction %d", led->time_on, led->fade_direction));
 
     if (direction == FADE_UP) {
         if (resetToStartingPosition) {
@@ -343,7 +343,7 @@ void mgos_pwm_rgb_fade_start(struct mgos_pwm_rgb_led* led, int ms, enum mgos_pwm
 
     else { // fade and blink
         mgos_clear_timer(led->led_timer_id); // otherwise with multiple fades we end up with multiple timers!
-        led->led_timer_id = mgos_set_timer(led->fade_time + 1 /* so we know it finished */, MGOS_TIMER_REPEAT, ledc_fade_cb, led);
+        led->led_timer_id = mgos_set_timer(led->time_on + 1 /* so we know it finished */, MGOS_TIMER_REPEAT, ledc_fade_cb, led);
     }
 }
 
