@@ -68,7 +68,7 @@ static void vLEDPWMTask(void* pvParameters) {
     }
 
     TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pParams->ticks / portTICK_PERIOD_MS;
+    const TickType_t xFrequency = pParams->fade_time / portTICK_PERIOD_MS;
     xLastWakeTime = xTaskGetTickCount();
 
     // turn them all off to avoid weird colors
@@ -259,7 +259,7 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms){
     pParams1->led1_pct = led->gpio_r_pct;
     pParams1->led2_pct = led->gpio_g_pct;
     pParams1->led3_pct = led->gpio_b_pct;
-    pParams1->ticks = led->fade_time;
+    pParams1->fade_time = led->fade_time;
     pParams1->freq = led->freq;
     pParams1->common_cathode = led->common_cathode;
     LOG(LL_DEBUG, ("LEDPWMTASK params r %g, g %g, b %g ", pParams1->led1_pct, pParams1->led2_pct, pParams1->led3_pct));
