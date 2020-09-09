@@ -29,8 +29,18 @@
 #include "soc/timer_group_reg.h"
 #include "soc/timer_group_struct.h"
 
-TaskHandle_t mgos_pwm_rgb_led_xHandle;
-
+/*
+void feedTheDog(){
+    // feed dog 0
+    TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
+    TIMERG0.wdt_feed=1;                       // feed dog
+    TIMERG0.wdt_wprotect=0;                   // write protect
+    // feed dog 1
+    TIMERG1.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
+    TIMERG1.wdt_feed=1;                       // feed dog
+    TIMERG1.wdt_wprotect=0;                   // write protect
+}
+ */
 
 typedef struct params_s
 {
@@ -100,8 +110,27 @@ static void vLEDPWMTask(void* pvParameters) {
     
     LOG(LL_DEBUG, ("LEDPWMTASK int r %g, g %g, b %g freq %d", pParams->led1_pct, pParams->led2_pct, pParams->led3_pct, pParams->freq));
 
+    const TickType_t xNextWakeTime = xLastWakeTime;
+    const TickType_t xOn = pdMS_TO_TICKS((int)pParams->time_on);
+    const TickType_t xOff = pdMS_TO_TICKS((int)pParams->time_off);
+
     for (;;) {
-        on = !on;
+
+        // feed dog 0
+        TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
+        TIMERG0.wdt_feed=1;                       // feed dog
+        TIMERG0.wdt_wprotect=0;                   // write protect
+        // feed dog 1
+        TIMERG1.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
+        TIMERG1.wdt_feed=1;                       // feed dog
+        TIMERG1.wdt_wprotect=0;                   // write protect
+
+        //if (xTaskGetTickCount() >= xNextWakeTime) {
+
+        //on = !on;
+
+        on = true;
+        LOG(LL_DEBUG, ("LEDPWMTASKa ON %d", (int)pParams->time_on));
 
         if (pParams->led1_gpio)
             mgos_pwm_set(pParams->led1_gpio, pParams->freq, on ? pParams->led1_pct : offDuty);
@@ -112,7 +141,37 @@ static void vLEDPWMTask(void* pvParameters) {
         //vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
         //vTaskDelay(pdMS_TO_TICKS(10));
-        vTaskDelay(pParams->time / portTICK_PERIOD_MS);
+
+        /*
+            if (on) {
+                //vTaskDelay(pParams->time_on / portTICK_PERIOD_MS);
+                LOG(LL_DEBUG, ("LEDPWMTASKa ON %d", (int)pParams->time_on));
+                //vTaskDelay(pdMS_TO_TICKS((int)pParams->time_on));
+                //vTaskDelay(pdMS_TO_TICKS(1000));
+                xNextWakeTime = xTaskGetTickCount() + xOn;
+            } else {
+                LOG(LL_DEBUG, ("LEDPWMTASKa off %d", (int)pParams->time_off));
+                //vTaskDelay(pdMS_TO_TICKS((int)pParams->time_off));
+                //vTaskDelay(pdMS_TO_TICKS(1000));
+                //vTaskDelay(pParams->time_off / portTICK_PERIOD_MS);
+                xNextWakeTime = xTaskGetTickCount() + xOff;
+            }
+            */
+
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+
+        on = false;
+        LOG(LL_DEBUG, ("LEDPWMTASKa off %d", (int)pParams->time_off));
+
+        if (pParams->led1_gpio)
+            mgos_pwm_set(pParams->led1_gpio, pParams->freq, on ? pParams->led1_pct : offDuty);
+        if (pParams->led2_gpio)
+            mgos_pwm_set(pParams->led2_gpio, pParams->freq, on ? pParams->led2_pct : offDuty);
+        if (pParams->led3_gpio)
+            mgos_pwm_set(pParams->led3_gpio, pParams->freq, on ? pParams->led3_pct : offDuty);
+        //}
+
+        vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 
     vTaskDelete(NULL);
