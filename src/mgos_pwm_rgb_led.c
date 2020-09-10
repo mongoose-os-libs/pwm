@@ -29,6 +29,10 @@
 #include "soc/timer_group_reg.h"
 #include "soc/timer_group_struct.h"
 
+#ifndef MGOS_TASK_PRIORITY
+#define MGOS_TASK_PRIORITY 5
+#endif
+
 /*
 void feedTheDog(){
     // feed dog 0
@@ -107,8 +111,9 @@ static void vLEDPWMTask(void* pvParameters) {
         mgos_pwm_set(pParams->led3_gpio, 0, offDuty);
         mgos_gpio_write(pParams->led3_gpio, offDuty ? 1 : 0);
     }
-    
-    LOG(LL_DEBUG, ("LEDPWMTASK int r %g, g %g, b %g freq %d", pParams->led1_pct, pParams->led2_pct, pParams->led3_pct, pParams->freq));
+
+    //printf("LEDPWMTASK int r %g, g %g, b %g freq %d \n", pParams->led1_pct, pParams->led2_pct, pParams->led3_pct, pParams->freq);
+    LOG(LL_DEBUG, ("LEDPWMTASK int r %3.2f, g %3.2f, b %3.2f freq %d", pParams->led1_pct, pParams->led2_pct, pParams->led3_pct, (int)pParams->freq));
 
     const TickType_t xNextWakeTime = xLastWakeTime;
     const TickType_t xOn = pdMS_TO_TICKS((int)pParams->time_on);
@@ -116,6 +121,7 @@ static void vLEDPWMTask(void* pvParameters) {
 
     for (;;) {
 
+        /*
         // feed dog 0
         TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
         TIMERG0.wdt_feed=1;                       // feed dog
@@ -124,6 +130,7 @@ static void vLEDPWMTask(void* pvParameters) {
         TIMERG1.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
         TIMERG1.wdt_feed=1;                       // feed dog
         TIMERG1.wdt_wprotect=0;                   // write protect
+        */
 
         //if (xTaskGetTickCount() >= xNextWakeTime) {
 
@@ -131,6 +138,8 @@ static void vLEDPWMTask(void* pvParameters) {
 
         on = true;
         LOG(LL_DEBUG, ("LEDPWMTASKa ON %d", (int)pParams->time_on));
+
+        LOG(LL_DEBUG, ("LEDPWMTASKa core %d", (int)xPortGetCoreID()));
 
         if (pParams->led1_gpio)
             mgos_pwm_set(pParams->led1_gpio, pParams->freq, on ? pParams->led1_pct : offDuty);
@@ -158,7 +167,9 @@ static void vLEDPWMTask(void* pvParameters) {
             }
             */
 
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        //vTaskDelay(200 / portTICK_PERIOD_MS);
+        vTaskDelay((int)pParams->time_off / portTICK_PERIOD_MS);
+
 
         on = false;
         LOG(LL_DEBUG, ("LEDPWMTASKa off %d", (int)pParams->time_off));
@@ -171,7 +182,8 @@ static void vLEDPWMTask(void* pvParameters) {
             mgos_pwm_set(pParams->led3_gpio, pParams->freq, on ? pParams->led3_pct : offDuty);
         //}
 
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        //vTaskDelay(200 / portTICK_PERIOD_MS);
+        vTaskDelay((int)pParams->time_on / portTICK_PERIOD_MS);
     }
 
     vTaskDelete(NULL);
@@ -307,15 +319,15 @@ void mgos_pwm_rgb_blink_stop(struct mgos_pwm_rgb_led* led){
     }
 }
 
-void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms_on, int ms_off){
-    LOG(LL_INFO, ("LEDC blink_start ms: %d", ms));
+void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms_on, int ms_off) {
+
     mgos_pwm_rgb_fade_stop(led); // stop any fading
 
     led->fade_max = 255;
     led->fade_min = 0;
     led->fade_direction = FADE_BLINK;
     // Some sensible limits
-    if (ms_on < 50){
+    if (ms_on < 50) {
         ms_on = 50;
     } else if (ms_on > 100000) {
         ms_on = 100000;
@@ -346,16 +358,24 @@ void mgos_pwm_rgb_blink_start(struct mgos_pwm_rgb_led* led, int ms_on, int ms_of
     pParams1->common_cathode = led->common_cathode;
     LOG(LL_DEBUG,
         ("LEDPWMTASK params r %g, g %g, b %g time %d / %d", pParams1->led1_pct,
-         pParams1->led2_pct, pParams1->led3_pct, led->time_on, led->time_off));
+            pParams1->led2_pct, pParams1->led3_pct, led->time_on, led->time_off));
 
     BaseType_t xReturned;
-    xReturned = xTaskCreate(
+
+    //xReturned = xTaskCreate(
+
+    static int taskCore = 1;
+
+    xReturned = xTaskCreatePinnedToCore(
         vLEDPWMTask, /* Function that implements the task. */
         "LEDPWMTASK", /* Text name for the task. */
-        4096, /* Stack size in words, not bytes. */
+        1024 * 4, /* Stack size in words, not bytes.  ..which might not be the case anymore according to espressif */
         pParams1, /* Parameter passed into the task. */
-        tskIDLE_PRIORITY + 1, /* Priority at which the task is created. */
-        &led->xHandle); /* Used to pass out the created task's handle. */
+        //tskIDLE_PRIORITY + 4, /* Priority at which the task is created. */
+        MGOS_TASK_PRIORITY + 1,
+        &led->xHandle, /* Used to pass out the created task's handle. */
+        taskCore  /* Core where the task should be pinned */
+        );
 }
 
 
@@ -433,8 +453,6 @@ bool mgos_pwm_rgb_led_init(struct mgos_pwm_rgb_led *led, int gpio_r, int gpio_g,
   led->led_timer_id = MGOS_INVALID_TIMER_ID;
 
   led->xHandle = NULL;
-
-  mgos_pwm_rgb_led_xHandle = NULL;
 
   return mgos_pwm_rgb_led_apply(led);
 }
