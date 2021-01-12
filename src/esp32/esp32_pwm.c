@@ -90,9 +90,6 @@ static bool esp32_pwm_config_timer(int timer, int freq) {
 }
 
 
-
-
-
 static bool esp32_pwm_add(int pin, int timer, int freq, int duty) {
   int ch;
   esp_err_t rc;
