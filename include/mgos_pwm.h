@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include "mgos_event.h"
+
 #ifndef CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
 #define CS_MOS_LIBS_PWM_SRC_MGOS_PWM_H_
 
@@ -23,6 +25,22 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+#define MGOS_PWM_BASE MGOS_EVENT_BASE('P', 'W', 'M')
+
+enum mgos_pwm_event
+{
+    MGOS_PWM_CHANNEL = MGOS_PWM_BASE,
+    MGOS_PWM_OTHER
+
+};
+
+/* ev_data for MGOS_PWM_CHANNEL event. */
+struct mgos_pwm_channel_data
+{
+    int pin;
+    int channel;   
+};
 
 /*
  *

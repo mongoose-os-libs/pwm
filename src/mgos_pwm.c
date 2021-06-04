@@ -20,9 +20,12 @@
  * [mgos_pwm.c](https://github.com/mongoose-os-libs/pwm/blob/master/src/mgos_pwm.c)
  */
 
-#include <stdbool.h>
 #include "mgos_pwm.h"
 
+#include <stdbool.h>
+
 bool mgos_pwm_init(void) {
+  mgos_event_register_base(MGOS_PWM_BASE, "mgos_PWM");
+
   return true;
 }

@@ -151,12 +151,12 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
    */
   if (freq > 0 && freq < 10) return false;
 
-  p = find_or_create_pwm_info(pin, (freq > 0) && (duty > 0));
+  p = find_or_create_pwm_info(pin, (freq > 0));
   if (p == NULL) {
     return false;
   }
 
-  if (freq <= 0 || duty <= 0) {
+  if (freq <= 0) {
     remove_pwm_info(p);
     pwm_configure_timer();
     mgos_gpio_write(pin, 0);
