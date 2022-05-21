@@ -17,10 +17,10 @@
 
 #ifndef RTOS_SDK
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "esp_missing_includes.h"
 
@@ -30,8 +30,7 @@
 #include "mgos_gpio.h"
 #include "mgos_timers.h"
 #include "mgos_utils.h"
-#include "esp_gpio.h"
-#include "esp_periph.h"
+
 #include "esp_hw_timers.h"
 
 /*
@@ -139,7 +138,7 @@ static bool pwm_configure_timer(void) {
 bool mgos_pwm_set(int pin, int freq, float duty) {
   struct pwm_info *p;
 
-  if (pin != 16 && get_gpio_info(pin) == NULL) {
+  if (pin < 0 || pin > 16) {
     return false;
   }
 
